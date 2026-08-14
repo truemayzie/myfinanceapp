@@ -1,53 +1,75 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore, currentPeriodKey } from '../store/useStore'
 import { Sheet } from '../components/Sheet'
 import { Button } from '../components/ui/Button'
 import { Field } from '../components/ui/Field'
-import { formatMoney, periodIncome } from '../utils/finance'
-import { haptic } from '../telegram'
+import { Icon } from '../components/icons'
+import { useApp } from '../AppContext'
+import { iconOf } from '../data/seed'
 
 export default function BudgetPlan({ onClose }: { onClose: () => void }) {
-  const { user, categories, savePlan, updateCategory, plans, operations } = useStore()
+  const { showToast } = useApp()
   const pk = currentPeriodKey()
-  const since = user.monthResetAt ?? undefined
-  const existing = plans.find(p => p.periodKey === pk)
+  const categories = useStore(s => s.categories)
+  const goals = useStore(s => s.goals)
+  const plans = useStore(s => s.plans)
+  const savePlan = useStore(s => s.savePlan)
+  const plan = plans.find(p => p.periodKey === pk)
 
-  const [income, setIncome] = useState(existing?.incomePlanned ?? periodIncome(operations, pk, user.periodStartDay, since))
-  const [limits, setLimits] = useState<Record<string, number>>(
-    existing?.categoryLimits ??
-    Object.fromEntries(categories.filter(c => !c.isArchived).map(c => [c.id, c.monthlyLimit])),
+  const [income, setIncome] = useState(plan ? String(plan.incomePlanned) : '')
+  const [limits, setLimits] = useState<Record<string, string>>(
+    Object.fromEntries(categories.map(c => [c.id, String(plan?.categoryLimits?.[c.id] ?? c.monthlyLimit ?? '')])),
   )
+  const [goalContrib, setGoalContrib] = useState(plan ? String(plan.goalContribution ?? '') : '')
 
-  const allocated = Object.values(limits).reduce((s, v) => s + (v || 0), 0)
-  const free = income - allocated
+  const totalLimits = useMemo(() => Object.values(limits).reduce((s, v) => s + (parseInt(v, 10) || 0), 0), [limits])
 
   const save = () => {
-    savePlan({ periodKey: pk, incomePlanned: income, categoryLimits: limits, goalContribution: 0 })
-    for (const [id, value] of Object.entries(limits)) {
-      updateCategory(id, { monthlyLimit: value || 0 })
-    }
-    haptic('success')
+    const parsed = Object.fromEntries(
+      categories.map(c => [c.id, Math.max(0, parseInt(limits[c.id] ?? '0', 10) || 0)]),
+    )
+    savePlan({
+      periodKey: pk,
+      incomePlanned: Math.max(0, parseInt(income, 10) || 0),
+      categoryLimits: parsed,
+      goalContribution: Math.max(0, parseInt(goalContrib, 10) || 0),
+    })
+    showToast('План сохранён')
     onClose()
   }
 
   return (
-    <Sheet title="Спланировать бюджет" onClose={onClose}>
-      <Field label="Доход за период">
-        <input type="number" inputMode="decimal" value={income} onChange={e => setIncome(Number(e.target.value))} />
+    <Sheet title="План на период" onClose={onClose}>
+      <Field label="Планируемый доход (₽)">
+        <input className="input" type="tel" inputMode="numeric" value={income} onChange={e => setIncome(e.target.value.replace(/[^\d]/g, ''))} />
       </Field>
-      <div className="card-title" style={{ marginTop: 4 }}>Лимиты по категориям</div>
-      {categories.filter(c => !c.isArchived).map(c => (
-        <div className="field" key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 20 }}>{c.emoji}</span>
-          <span style={{ flex: 1 }}>{c.name}</span>
-          <input type="number" inputMode="decimal" style={{ width: 110 }} value={limits[c.id] ?? 0} onChange={e => setLimits({ ...limits, [c.id]: Number(e.target.value) })} />
+
+      <div className="field">
+        <label>Лимиты по категориям</label>
+        <div className="list">
+          {categories.map(c => (
+            <div key={c.id} className="limit-row">
+              <i className="sig" style={{ background: c.color }}><Icon name={iconOf(c) as any} size={15} /></i>
+              <span className="row-main"><b>{c.name}</b></span>
+              <input
+                className="input num-input"
+                type="tel"
+                inputMode="numeric"
+                value={limits[c.id] ?? ''}
+                placeholder="—"
+                onChange={e => setLimits({ ...limits, [c.id]: e.target.value.replace(/[^\d]/g, '') })}
+              />
+            </div>
+          ))}
         </div>
-      ))}
-      <div className="card" style={{ background: 'color-mix(in srgb, var(--accent) 12%, #fff)' }}>
-        <div className="row"><span className="muted">Распределено</span><span className="spacer" /><b>{formatMoney(allocated, user.currency)}</b></div>
-        <div className="row" style={{ marginTop: 6 }}><span className="muted">Свободный остаток</span><span className="spacer" /><b style={{ color: free >= 0 ? 'var(--green)' : 'var(--red)' }}>{formatMoney(free, user.currency)}</b></div>
+        <small className="muted">Сумма лимитов: {totalLimits.toLocaleString('ru-RU')} ₽</small>
       </div>
-      <Button onClick={save}>Сохранить план</Button>
+
+      <Field label="Взнос из дохода в цель (₽/период)">
+        <input className="input" type="tel" inputMode="numeric" value={goalContrib} onChange={e => setGoalContrib(e.target.value.replace(/[^\d]/g, ''))} />
+      </Field>
+
+      <Button block onClick={save}>Сохранить план</Button>
     </Sheet>
   )
 }

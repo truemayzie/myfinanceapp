@@ -1,10 +1,17 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
+import { Icon, IconName } from '../icons'
 
-export function EmptyState({ icon = '📭', text, action }: { icon?: string; text: string; action?: ReactNode }) {
+export function EmptyState({ icon, title, text, action }: {
+  icon: IconName
+  title: string
+  text?: string
+  action?: ReactNode
+}) {
   return (
-    <div className="center">
-      <div style={{ fontSize: 40 }}>{icon}</div>
-      <p className="muted">{text}</p>
+    <div className="empty">
+      <div className="empty-art"><Icon name={icon} size={46} /></div>
+      <h3>{title}</h3>
+      {text && <p>{text}</p>}
       {action}
     </div>
   )

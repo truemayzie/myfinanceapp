@@ -1,59 +1,93 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useStore } from '../store/useStore'
-import { useApp } from '../AppContext'
 import { Sheet } from '../components/Sheet'
-import { EmptyState } from '../components/ui/EmptyState'
-import { dateLabel, formatMoney } from '../utils/finance'
-import type { Category, Goal, Operation } from '../types'
+import { Icon } from '../components/icons'
+import { iconOf } from '../data/seed'
+import type { Operation } from '../types'
 
-function opMeta(op: Operation, categories: Category[], goals: Goal[]) {
-  if (op.type === 'income') return { emoji: '💰', name: op.comment || 'Доход' }
-  if (op.type === 'goal_contribution') {
-    const g = goals.find(x => x.id === op.goalId)
-    return { emoji: g?.emoji || '🎯', name: `В цель: ${g?.title ?? '—'}` + (op.comment ? ` · ${op.comment}` : '') }
-  }
-  const c = categories.find(x => x.id === op.categoryId)
-  return { emoji: c?.emoji ?? '📦', name: op.comment || c?.name || 'Без категории' }
+function dayLabel(date: string): string {
+  const d = new Date(date + 'T00:00:00')
+  const today = new Date()
+  const same = (a: Date, b: Date) => a.toDateString() === b.toDateString()
+  if (same(d, today)) return 'Сегодня'
+  const yest = new Date(today); yest.setDate(today.getDate() - 1)
+  if (same(d, yest)) return 'Вчера'
+  return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
 export default function History({ onClose }: { onClose: () => void }) {
-  const { categories, goals, operations, deleteOperation, user } = useStore()
-  const { showToast } = useApp()
+  const operations = useStore(s => s.operations)
+  const categories = useStore(s => s.categories)
+  const goals = useStore(s => s.goals)
+  const deleteOperation = useStore(s => s.deleteOperation)
+  const [confirmId, setConfirmId] = useState<string | null>(null)
 
   const groups = useMemo(() => {
-    const sorted = [...operations].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt)
-    const byDay = new Map<string, Operation[]>()
-    for (const o of sorted) {
-      const list = byDay.get(o.date) ?? []
-      list.push(o)
-      byDay.set(o.date, list)
-    }
-    return [...byDay.entries()]
+    const sorted = operations.slice().sort((a, b) => b.date.localeCompare(a.date))
+    const map = new Map<string, Operation[]>()
+    sorted.forEach(o => {
+      const arr = map.get(o.date) ?? []
+      arr.push(o)
+      map.set(o.date, arr)
+    })
+    return [...map.entries()]
   }, [operations])
 
+  if (operations.length === 0) {
+    return (
+      <Sheet title="История" onClose={onClose}>
+        <div className="empty">
+          <div className="empty-art"><Icon name="history" size={46} /></div>
+          <h3>Пока пусто</h3>
+          <p>Операции появятся здесь после первого списания.</p>
+        </div>
+      </Sheet>
+    )
+  }
+
   return (
-    <Sheet title="История операций" onClose={onClose}>
-      {groups.length === 0 && <EmptyState icon="🧾" text="Операций пока нет" />}
-      <div className="sheet-body">
-        {groups.map(([day, ops]) => (
-          <div key={day} className="day-group">
-            <div className="day-label">{dateLabel(day)}</div>
-            {ops.map(o => {
-              const meta = opMeta(o, categories, goals)
-              return (
-                <div className="op-row" key={o.id}>
-                  <div className="cat-emoji" style={{ width: 36, height: 36, fontSize: 18 }}>{meta.emoji}</div>
-                  <div className="cat-info">
-                    <div className="cat-name" style={{ fontSize: 14 }}>{meta.name}</div>
-                    {o.source === 'tbank_push' && <div className="cat-sub">из пуша Т-Банка</div>}
-                  </div>
-                  <div className={`op-amount ${o.type}`}>{o.type === 'income' ? '+' : '−'}{formatMoney(o.amount, user.currency)}</div>
-                  <button className="icon-btn" onClick={() => { deleteOperation(o.id); showToast('Операция удалена') }} aria-label="Удалить">🗑️</button>
-                </div>
-              )
-            })}
-          </div>
-        ))}
+    <Sheet title="История" onClose={onClose}>
+      <div className="hcart">
+        {groups.map(([date, ops]) => {
+          const dayTotal = ops.reduce((s, o) => s + (o.type === 'expense' ? o.amount : 0), 0)
+          return (
+            <div key={date} className="hday">
+              <div className="hday-head">
+                <span>{dayLabel(date)}</span>
+                {dayTotal > 0 && <span className="num">{dayTotal.toLocaleString('ru-RU')} ₽</span>}
+              </div>
+              <div className="list">
+                {ops.map(o => {
+                  const cat = categories.find(c => c.id === o.categoryId)
+                  const goal = goals.find(g => g.id === o.goalId)
+                  return (
+                    <div key={o.id} className="list-row">
+                      <i className="sig" style={{ background: o.type === 'income' ? 'var(--income)' : o.type === 'expense' ? (cat?.color ?? 'var(--surface-2)') : 'var(--warn)' }}>
+                        {o.type === 'income' ? <Icon name="arrowDown" size={16} />
+                          : o.type === 'expense' ? <Icon name={iconOf(cat ?? {}) as any} size={16} />
+                          : <Icon name="target" size={16} />}
+                      </i>
+                      <span className="row-main">
+                        <b>
+                          {o.type === 'income' ? 'Доход' : o.type === 'expense' ? (cat?.name ?? '—') : (goal?.title ?? 'В цель')}
+                        </b>
+                        <small>{o.comment || (o.source === 'tbank_push' ? 'из пуша банка' : 'вручную')} · {o.createdAt ? new Date(o.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}</small>
+                      </span>
+                      <span className={`row-amount num ${o.type === 'expense' ? '' : 'pos'}`}>
+                        {o.type === 'expense' ? '−' : '+'}{o.amount.toLocaleString('ru-RU')}
+                      </span>
+                      {confirmId === o.id ? (
+                        <button className="icon-btn danger" onClick={() => { deleteOperation(o.id); setConfirmId(null) }} title="Подтвердить удаление"><Icon name="trash" size={17} /></button>
+                      ) : (
+                        <button className="icon-btn muted" onClick={() => setConfirmId(o.id)} title="Удалить"><Icon name="trash" size={17} /></button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </Sheet>
   )

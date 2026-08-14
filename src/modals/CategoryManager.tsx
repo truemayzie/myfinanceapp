@@ -1,43 +1,28 @@
 import { useStore } from '../store/useStore'
-import { useApp } from '../AppContext'
 import { Sheet } from '../components/Sheet'
-import { Button } from '../components/ui/Button'
-import { formatMoney } from '../utils/finance'
+import { Icon } from '../components/icons'
+import { useApp } from '../AppContext'
+import { iconOf } from '../data/seed'
 
 export default function CategoryManager({ onClose }: { onClose: () => void }) {
-  const { user, categories, deleteCategory } = useStore()
-  const { openSheet, showToast } = useApp()
-  const active = categories.filter(c => !c.isArchived).sort((a, b) => a.sortOrder - b.sortOrder)
+  const { openSheet } = useApp()
+  const categories = useStore(s => s.categories)
 
   return (
     <Sheet title="Категории" onClose={onClose}>
-      <div className="sheet-body">
-        {active.map(c => (
-          <div className="cat-row" key={c.id}>
-            <div className="cat-emoji" style={{ background: c.color + '33' }}>{c.emoji}</div>
-            <div className="cat-info">
-              <div className="cat-name">{c.name}</div>
-              <div className="cat-sub">{c.monthlyLimit > 0 ? `лимит ${formatMoney(c.monthlyLimit, user.currency)}` : 'без лимита'}</div>
-            </div>
-            <button
-              className="icon-btn"
-              onClick={() => openSheet('category', { id: c.id })}
-              aria-label="Редактировать"
-              title="Редактировать"
-            >✏️</button>
-            <button
-              className="icon-btn"
-              onClick={() => {
-                if (confirm(`Удалить категорию «${c.name}»?`)) { deleteCategory(c.id); showToast('Категория удалена') }
-              }}
-              aria-label="Удалить"
-              title="Удалить"
-            >🗑️</button>
-          </div>
+      <div className="list">
+        {categories.map(c => (
+          <button key={c.id} className="nav-row" onClick={() => openSheet('category', { id: c.id })}>
+            <i className="sig" style={{ background: c.color }}><Icon name={iconOf(c) as any} size={16} /></i>
+            <span className="row-main">
+              <b>{c.name}</b>
+              <small>{c.isArchived ? 'скрыта' : c.monthlyLimit ? `лимит ${c.monthlyLimit.toLocaleString('ru-RU')} ₽` : 'без лимита'}</small>
+            </span>
+            <Icon name="chevR" size={18} className="muted" />
+          </button>
         ))}
-        {active.length === 0 && <p className="muted center">Категорий пока нет</p>}
       </div>
-      <Button variant="dashed" onClick={() => openSheet('category')} style={{ marginTop: 12 }}>+ Новая категория</Button>
+      <button className="btn btn-ink btn-block" onClick={() => openSheet('category')}>Добавить категорию</button>
     </Sheet>
   )
 }

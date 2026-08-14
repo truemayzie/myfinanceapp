@@ -19,7 +19,10 @@ export interface User {
 export interface Category {
   id: string
   name: string
-  emoji: string
+  /** Системная иконка из набора (см. components/icons.tsx) */
+  icon?: string
+  /** Legacy emoji (остаётся для совместимости со старыми данными) */
+  emoji?: string
   color: string
   monthlyLimit: number
   sortOrder: number
@@ -43,9 +46,9 @@ export interface Goal {
   title: string
   targetAmount: number
   savedAmount: number
-  coverImage: string
+  coverImage?: string
   emoji: string
-  deadline: string | null
+  deadline?: string | null
   isPrimary: boolean
   status: 'active' | 'done' | 'archived'
 }

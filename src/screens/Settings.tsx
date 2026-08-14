@@ -2,56 +2,72 @@ import { useState } from 'react'
 import { useStore, currentPeriodKey } from '../store/useStore'
 import { useApp } from '../AppContext'
 import { THEMES } from '../data/seed'
-import { TopBar } from '../components/ui/TopBar'
+import { exportCSV } from '../utils/export'
+import { AppHeader, Section } from '../components/ui/AppHeader'
+import { Icon } from '../components/icons'
 import { Button } from '../components/ui/Button'
-import { Field } from '../components/ui/Field'
 
 export default function Settings() {
-  const { user, updateUser, operations, sendSupport, resetPeriod } = useStore()
+  const user = useStore(s => s.user)
+  const updateUser = useStore(s => s.updateUser)
+  const operations = useStore(s => s.operations)
+  const categories = useStore(s => s.categories)
+  const goals = useStore(s => s.goals)
+  const resetPeriod = useStore(s => s.resetPeriod)
   const { openSheet, showToast } = useApp()
-  const [supportText, setSupportText] = useState('')
-  const themes = Object.entries(THEMES) as [keyof typeof THEMES, typeof THEMES[keyof typeof THEMES]][]
+  const [name, setName] = useState(user.name)
+
+  const themes = Object.entries(THEMES) as [keyof typeof THEMES, (typeof THEMES)[keyof typeof THEMES]][]
 
   const resetMonth = () => {
-    if (confirm('Обнулить траты текущего месяца? Операции останутся в истории, но перестанут влиять на бюджет.')) {
+    if (confirm('Обнулить траты текущего периода? Операции останутся в истории, но перестанут влиять на бюджет.')) {
       resetPeriod(currentPeriodKey())
-      showToast('Месяц обнулён')
+      showToast('Период обнулён')
     }
-  }
-
-  const send = () => {
-    if (!supportText.trim()) return
-    sendSupport(supportText.trim())
-    setSupportText('')
-    showToast('Отправлено в поддержку')
   }
 
   return (
     <div>
-      <TopBar title="Настройки" />
+      <AppHeader title="Настройки" subtitle={`Привет, ${user.name}`} />
 
-      <div className="card">
-        <div className="card-title">Подписка</div>
-        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Бесплатно: до 10 категорий и 3 целей. PRO — безлимит и экспорт.</p>
-        <Button onClick={() => showToast('Подписка — в разработке')}>Выбрать план</Button>
+      <Section title="Профиль" />
+      <div className="panel">
+        <div className="field">
+          <label>Имя</label>
+          <input
+            className="input"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            onBlur={() => updateUser({ name: name.trim() || 'Друг' })}
+          />
+        </div>
+        <div className="field">
+          <label>Начало периода (день зарплаты)</label>
+          <input
+            className="input"
+            type="number" min={1} max={28}
+            defaultValue={user.periodStartDay}
+            onBlur={e => updateUser({ periodStartDay: Math.min(28, Math.max(1, Number(e.target.value) || 1)) })}
+          />
+        </div>
+        <div className="field">
+          <label>Валюта</label>
+          <input
+            className="input"
+            defaultValue={user.currency}
+            onBlur={e => updateUser({ currency: e.target.value.trim() || '₽' })}
+          />
+        </div>
       </div>
 
-      <div className="card">
-        <div className="card-title">Поддержка</div>
-        <Field label="Сообщение">
-          <textarea value={supportText} onChange={e => setSupportText(e.target.value)} placeholder="Опишите проблему..." style={{ minHeight: 70, resize: 'vertical' }} />
-        </Field>
-        <Button onClick={send}>Написать в поддержку</Button>
-      </div>
-
-      <div className="card">
-        <div className="card-title">Тема</div>
+      <Section title="Акцент" />
+      <div className="panel">
         <div className="theme-grid">
           {themes.map(([key, t]) => (
-            <div
+            <button
               key={key}
               className={`theme-swatch ${user.theme === key ? 'on' : ''}`}
-              style={{ background: t.accent }}
+              style={{ background: t.primary }}
               onClick={() => updateUser({ theme: key })}
               title={t.label}
             />
@@ -59,27 +75,48 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="card">
-        <div className="card-title">Импорт из Т-Банка</div>
-        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>Перешлите пуш о списании боту — трата добавится автоматически.</p>
-        <Button variant="ghost" onClick={() => openSheet('tbank')}>Добавить из пуша</Button>
+      <Section title="Данные" />
+      <div className="list">
+        <button className="nav-row" onClick={() => openSheet('categories')}>
+          <Icon name="tag" size={18} /><span className="row-main"><b>Категории</b><small>{categories.length}</small></span>
+          <Icon name="chevR" size={18} className="muted" />
+        </button>
+        <button className="nav-row" onClick={() => openSheet('tbank')}>
+          <Icon name="phone" size={18} /><span className="row-main"><b>Импорт из Т-Банка</b><small>пуши бота</small></span>
+          <Icon name="chevR" size={18} className="muted" />
+        </button>
+        <button className="nav-row" onClick={() => openSheet('history')}>
+          <Icon name="history" size={18} /><span className="row-main"><b>История операций</b><small>{operations.length}</small></span>
+          <Icon name="chevR" size={18} className="muted" />
+        </button>
+        <button
+          className="nav-row"
+          onClick={() => {
+            if (operations.length === 0) return showToast('Нет операций для экспорта')
+            exportCSV(operations, categories, goals)
+            showToast('CSV скачан')
+          }}
+        >
+          <Icon name="download" size={18} /><span className="row-main"><b>Экспорт CSV</b><small>{operations.length} операций</small></span>
+          <Icon name="chevR" size={18} className="muted" />
+        </button>
       </div>
 
-      <div className="card">
-        <div className="card-title">Профиль</div>
-        <Field label="Имя">
-          <input defaultValue={user.name} onBlur={e => updateUser({ name: e.target.value.trim() || 'Друг' })} />
-        </Field>
-        <Field label="День начала месяца (дата зарплаты)">
-          <input type="number" min={1} max={28} defaultValue={user.periodStartDay} onBlur={e => updateUser({ periodStartDay: Math.min(28, Math.max(1, Number(e.target.value) || 1)) })} />
-        </Field>
-        <Field label="Валюта">
-          <input defaultValue={user.currency} onBlur={e => updateUser({ currency: e.target.value.trim() || '₽' })} />
-        </Field>
+      <Section title="Подписка" />
+      <div className="upgrade">
+        <h3>Финансы PRO</h3>
+        <p>Неограниченные категории, цели без лимита и приоритетная поддержка.</p>
+        <Button onClick={() => showToast('Подписка — в разработке')}>Выбрать план</Button>
       </div>
 
-      <Button variant="danger" onClick={resetMonth}>Обнулить траты за месяц</Button>
-      <p className="muted center" style={{ fontSize: 12 }}>Всего операций: {operations.length}</p>
+      <div className="row-actions">
+        <button className="link-btn danger" onClick={resetMonth}>Обнулить период</button>
+      </div>
+      <p className="footnote">Всего операций: {operations.length} · данные хранятся локально и в облаке</p>
+
+      <div className="pad">
+        <Button variant="ghost" block onClick={() => openSheet('support')}>Поддержка</Button>
+      </div>
     </div>
   )
 }

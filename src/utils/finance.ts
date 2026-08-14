@@ -109,6 +109,44 @@ export function daysLeft(periodKey: string, periodStartDay: number): number {
   return Math.max(0, diff)
 }
 
+/** Дней прошло от начала периода (включая текущий день) */
+export function daysElapsed(periodKey: string, periodStartDay: number): number {
+  const { start } = periodBounds(periodKey, periodStartDay)
+  const now = new Date()
+  const diff = Math.floor((now.getTime() - start.getTime()) / 86400000) + 1
+  return Math.max(1, diff)
+}
+
+/** Дней в периоде */
+export function daysTotal(periodKey: string, periodStartDay: number): number {
+  const { start, end } = periodBounds(periodKey, periodStartDay)
+  return Math.round((end.getTime() - start.getTime()) / 86400000) + 1
+}
+
+/** Прогресс периода в % (сколько времени уже прошло) */
+export function periodProgress(periodKey: string, periodStartDay: number): number {
+  return Math.min(100, (daysElapsed(periodKey, periodStartDay) / daysTotal(periodKey, periodStartDay)) * 100)
+}
+
+/** Прогноз расхода к концу периода: spent / elapsed * total */
+export function forecastExpense(spent: number, periodKey: string, periodStartDay: number): number | null {
+  const elapsed = daysElapsed(periodKey, periodStartDay)
+  if (elapsed < 1) return null
+  return (spent / elapsed) * daysTotal(periodKey, periodStartDay)
+}
+
+/** Безопасный дневной лимит: сколько можно тратить в день до конца периода */
+export function dailyRate(remaining: number, periodKey: string, periodStartDay: number): number {
+  return remaining / Math.max(1, daysLeft(periodKey, periodStartDay))
+}
+
+/** Предыдущий период */
+export function prevPeriodKey(periodKey: string): string {
+  const [y, m] = periodKey.split('-').map(Number)
+  const d = new Date(y, m - 2, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export function emptyUser(): User {
   return {
     id: 'local',

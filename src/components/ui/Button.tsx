@@ -1,11 +1,25 @@
-import { ButtonHTMLAttributes } from 'react'
+import { ButtonHTMLAttributes, ReactNode } from 'react'
 
-type Variant = 'primary' | 'ghost' | 'danger' | 'dashed'
+type Variant = 'primary' | 'ink' | 'ghost' | 'danger' | 'soft'
 
 export function Button({
   variant = 'primary',
+  size,
+  block,
   className = '',
+  children,
   ...props
-}: { variant?: Variant; className?: string } & ButtonHTMLAttributes<HTMLButtonElement>) {
-  return <button className={`${variant}-btn ${className}`} {...props} />
+}: {
+  variant?: Variant
+  size?: 'sm'
+  block?: boolean
+  className?: string
+  children: ReactNode
+} & ButtonHTMLAttributes<HTMLButtonElement>) {
+  const cls = ['btn', `btn-${variant}`, size ? `btn-${size}` : '', block ? 'btn-block' : '', className].filter(Boolean).join(' ')
+  return (
+    <button className={cls} {...props}>
+      {children}
+    </button>
+  )
 }
