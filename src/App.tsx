@@ -16,6 +16,8 @@ import BudgetPlan from './modals/BudgetPlan'
 import GoalEdit from './modals/GoalEdit'
 import GoalContribute from './modals/GoalContribute'
 import CategoryEdit from './modals/CategoryEdit'
+import CategoryManager from './modals/CategoryManager'
+import History from './modals/History'
 import TbankImport from './modals/TbankImport'
 
 export default function App() {
@@ -81,6 +83,8 @@ export default function App() {
         {sheet === 'goal' && <GoalEdit onClose={() => setSheet(null)} editId={sheetPayload?.id} />}
         {sheet === 'goalContribute' && <GoalContribute onClose={() => setSheet(null)} goalId={sheetPayload?.id} />}
         {sheet === 'category' && <CategoryEdit onClose={() => setSheet(null)} editId={sheetPayload?.id} />}
+        {sheet === 'categories' && <CategoryManager onClose={() => setSheet(null)} />}
+        {sheet === 'history' && <History onClose={() => setSheet(null)} />}
         {sheet === 'tbank' && <TbankImport onClose={() => setSheet(null)} />}
 
         {toast && <div className="toast">{toast}</div>}

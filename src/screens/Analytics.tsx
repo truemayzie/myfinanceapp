@@ -4,23 +4,33 @@ import { formatMoney, periodBounds, periodExpense, periodIncome } from '../utils
 import Donut from '../components/charts/Donut'
 import BarChart from '../components/charts/BarChart'
 import Heatmap from '../components/charts/Heatmap'
+import { TopBar } from '../components/ui/TopBar'
+
+function inPeriodByIso(o: { date: string; createdAt: number }, startIso: string, endIso: string, since?: number) {
+  return o.date >= startIso && o.date <= endIso && o.createdAt >= (since ?? 0)
+}
 
 export default function Analytics() {
   const { user, categories, operations } = useStore()
   const pk = currentPeriodKey()
+  const since = user.monthResetAt ?? undefined
+
+  const { start, end } = useMemo(() => periodBounds(pk, user.periodStartDay), [pk, user.periodStartDay])
+  const startIso = start.toISOString().slice(0, 10)
+  const endIso = end.toISOString().slice(0, 10)
 
   const byCategory = useMemo(() => {
-    const { start, end } = periodBounds(pk, user.periodStartDay)
     const map = new Map<string, number>()
     operations
-      .filter(o => o.type === 'expense' && o.date >= start.toISOString().slice(0, 10) && o.date <= end.toISOString().slice(0, 10))
+      .filter(o => o.type === 'expense' && inPeriodByIso(o, startIso, endIso, since))
       .forEach(o => map.set(o.categoryId ?? 'none', (map.get(o.categoryId ?? 'none') ?? 0) + o.amount))
-    const segments = [...map.entries()].map(([cid, value]) => {
-      const c = categories.find(x => x.id === cid)
-      return { value, color: c?.color ?? '#C0A3F0', label: c?.name ?? 'Без категории' }
-    }).sort((a, b) => b.value - a.value)
-    return segments
-  }, [operations, pk, user.periodStartDay, categories])
+    return [...map.entries()]
+      .map(([cid, value]) => {
+        const c = categories.find(x => x.id === cid)
+        return { value, color: c?.color ?? '#C0A3F0', label: c?.name ?? 'Без категории' }
+      })
+      .sort((a, b) => b.value - a.value)
+  }, [operations, startIso, endIso, since, categories])
 
   const byMonth = useMemo(() => {
     const out: { label: string; income: number; expense: number }[] = []
@@ -38,20 +48,19 @@ export default function Analytics() {
   }, [operations])
 
   const dayAmounts = useMemo(() => {
-    const { start, end } = periodBounds(pk, user.periodStartDay)
     const map: Record<number, number> = {}
     operations
-      .filter(o => o.type === 'expense' && o.date >= start.toISOString().slice(0, 10) && o.date <= end.toISOString().slice(0, 10))
+      .filter(o => o.type === 'expense' && inPeriodByIso(o, startIso, endIso, since))
       .forEach(o => {
         const day = new Date(o.date + 'T00:00:00').getDate()
         map[day] = (map[day] ?? 0) + o.amount
       })
     return map
-  }, [operations, pk, user.periodStartDay])
+  }, [operations, startIso, endIso, since])
 
   return (
     <div>
-      <div className="topbar"><h1>Аналитика</h1></div>
+      <TopBar title="Аналитика" />
 
       <div className="card">
         <div className="card-title">Расходы по категориям</div>

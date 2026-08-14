@@ -12,6 +12,8 @@ export interface User {
   periodStartDay: number
   theme: ThemeName
   onboarded: boolean
+  /** Момент последнего сброса месяца: траты до этой даты не считаются в периодах */
+  monthResetAt: number | null
 }
 
 export interface Category {

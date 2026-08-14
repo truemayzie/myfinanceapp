@@ -17,7 +17,7 @@ async function callTelegram(method: string, payload: any) {
 
 function defaultState(name: string): StateDoc {
   return {
-    user: { id: 'local', telegramId: null, name, currency: '₽', periodStartDay: 1, theme: 'lavender', onboarded: true },
+    user: { id: 'local', telegramId: null, name, currency: '₽', periodStartDay: 1, theme: 'lavender', onboarded: true, monthResetAt: null },
     categories: DEFAULT_CATEGORIES.map(c => ({ ...c, id: uid() })),
     operations: [],
     goals: [],
@@ -54,16 +54,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({ ok: true })
   }
 
-  // Пытаемся распознать пуш Т-Банка
-  const parsed = buildOperationFromPush(text, defaultState(name).categories)
+  const supabase = getSupabase()
+  const { data } = await supabase.from('finance_state').select('data').eq('telegram_id', tid).maybeSingle()
+  let state: StateDoc | null = (data?.data as StateDoc) || null
+
+  // Матчим категории по реальному состоянию пользователя (если оно есть),
+  // иначе — по дефолтному набору.
+  const cats = state?.categories?.length ? state.categories : defaultState(name).categories
+  const parsed = buildOperationFromPush(text, cats)
   if (!parsed) {
     await callTelegram('sendMessage', { chat_id: tid, text: 'Не понял сообщение. Перешли пуш Т-Банка о списании или нажми «Открыть Финансы».' })
     return res.status(200).json({ ok: true })
   }
 
-  const supabase = getSupabase()
-  const { data } = await supabase.from('finance_state').select('data').eq('telegram_id', tid).maybeSingle()
-  let state: StateDoc = (data?.data as StateDoc) || defaultState(name)
+  if (!state) state = defaultState(name)
   if (!state.operations) state.operations = []
   if (!state.categories) state.categories = defaultState(name).categories
 

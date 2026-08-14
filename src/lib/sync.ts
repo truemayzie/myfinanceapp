@@ -12,7 +12,8 @@ function tidFromInit(initData: string): number | null {
   }
 }
 
-let timer: any = null
+let timer: ReturnType<typeof setTimeout> | null = null
+let started = false
 
 function pickState(s: any) {
   return {
@@ -26,6 +27,9 @@ function pickState(s: any) {
 }
 
 export async function initSync() {
+  if (started) return // StrictMode в dev вызывает эффекты дважды
+  started = true
+
   if (!SYNC_ENABLED) {
     useStore.getState().setHydrated(true)
     return
@@ -49,7 +53,7 @@ export async function initSync() {
 
   useStore.subscribe((s) => {
     if (!s.hydrated) return
-    clearTimeout(timer)
+    if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
       const d = getInitData()
       if (d) saveState(d, pickState(s))

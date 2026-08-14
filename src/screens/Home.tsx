@@ -1,17 +1,20 @@
 import { useStore, currentPeriodKey } from '../store/useStore'
 import { useApp } from '../AppContext'
-import { categorySpent, categoryStatus, daysLeft, formatMoney, goalProgress, monthLabel, periodExpense, periodIncome } from '../utils/finance'
+import { categorySpent, categoryStatus, daysLeft, formatMoney, goalProgress, monthLabel, periodExpense, periodGoalContribution, periodIncome, periodNet } from '../utils/finance'
 import { ProgressBar } from '../components/Sheet'
+import { Button } from '../components/ui/Button'
 
 export default function Home() {
   const { user, categories, operations, goals } = useStore()
   const { openSheet, goTab } = useApp()
   const pk = currentPeriodKey()
+  const since = user.monthResetAt ?? undefined
 
   const primary = goals.find(g => g.isPrimary) ?? goals[0] ?? null
-  const income = periodIncome(operations, pk, user.periodStartDay)
-  const expense = periodExpense(operations, pk, user.periodStartDay)
-  const remaining = income - expense
+  const income = periodIncome(operations, pk, user.periodStartDay, since)
+  const expense = periodExpense(operations, pk, user.periodStartDay, since)
+  const invested = periodGoalContribution(operations, pk, user.periodStartDay, since)
+  const remaining = periodNet(operations, pk, user.periodStartDay, since)
 
   return (
     <div>
@@ -32,18 +35,23 @@ export default function Home() {
             {formatMoney(primary.savedAmount)} из {formatMoney(primary.targetAmount)}
           </div>
           <ProgressBar pct={goalProgress(primary)} state={goalProgress(primary) >= 100 ? 'ok' : ''} />
-          <button className="primary-btn" style={{ marginTop: 12 }} onClick={() => openSheet('goalContribute', { id: primary.id })}>
-            + Добавить
-          </button>
+          <Button style={{ marginTop: 12 }} onClick={() => openSheet('goalContribute', { id: primary.id })}>
+            + Пополнить
+          </Button>
         </div>
       )}
 
       <div className="card">
+        <div className="card-title">
+          Касса месяца
+          <a onClick={() => openSheet('history')}>Все операции</a>
+        </div>
         <div className="muted" style={{ fontSize: 13 }}>Осталось в этом месяце</div>
         <div className="big-amount">{formatMoney(remaining, user.currency)}</div>
         <div className="summary">
           <div className="mini"><div className="lbl">Доход</div><div className="val" style={{ color: 'var(--green)' }}>{formatMoney(income)}</div></div>
           <div className="mini"><div className="lbl">Потрачено</div><div className="val" style={{ color: 'var(--accent2)' }}>{formatMoney(expense)}</div></div>
+          <div className="mini"><div className="lbl">В цели</div><div className="val" style={{ color: 'var(--orange)' }}>{formatMoney(invested)}</div></div>
         </div>
       </div>
 
@@ -56,9 +64,9 @@ export default function Home() {
       </div>
 
       <div className="card">
-        <div className="card-title">Категории <a onClick={() => openSheet('category')}>Изменить</a></div>
+        <div className="card-title">Категории <a onClick={() => openSheet('categories')}>Изменить</a></div>
         {categories.filter(c => !c.isArchived).map(c => {
-          const spent = categorySpent(operations, c.id, pk, user.periodStartDay)
+          const spent = categorySpent(operations, c.id, pk, user.periodStartDay, since)
           const st = categoryStatus(c, spent)
           return (
             <div className="cat-row" key={c.id}>

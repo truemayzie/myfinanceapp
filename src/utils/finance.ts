@@ -17,7 +17,7 @@ export function periodBounds(periodKey: string, periodStartDay: number): { start
 
 export function formatMoney(amount: number, currency = '₽'): string {
   const v = Math.round(amount)
-  return `${v.toLocaleString('ru-RU')} ${currency}`
+  return `${v.toLocaleString('ru-RU')} ${currency}`
 }
 
 export function monthLabel(periodKey: string, periodStartDay: number): string {
@@ -26,30 +26,55 @@ export function monthLabel(periodKey: string, periodStartDay: number): string {
   return base.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
 }
 
-export function categorySpent(ops: Operation[], catId: string, periodKey: string, periodStartDay: number): number {
-  const { start, end } = periodBounds(periodKey, periodStartDay)
-  return ops
-    .filter(o => o.type === 'expense' && o.categoryId === catId && inRange(o.date, start, end))
-    .reduce((s, o) => s + o.amount, 0)
-}
-
-export function periodIncome(ops: Operation[], periodKey: string, periodStartDay: number): number {
-  const { start, end } = periodBounds(periodKey, periodStartDay)
-  return ops
-    .filter(o => o.type === 'income' && inRange(o.date, start, end))
-    .reduce((s, o) => s + o.amount, 0)
-}
-
-export function periodExpense(ops: Operation[], periodKey: string, periodStartDay: number): number {
-  const { start, end } = periodBounds(periodKey, periodStartDay)
-  return ops
-    .filter(o => o.type === 'expense' && inRange(o.date, start, end))
-    .reduce((s, o) => s + o.amount, 0)
+export function dateLabel(iso: string): string {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'short', year: 'numeric',
+  })
 }
 
 export function inRange(iso: string, start: Date, end: Date): boolean {
   const d = new Date(iso + 'T00:00:00')
   return d >= start && d <= end
+}
+
+/** Операция относится к периоду и создана после возможного сброса месяца */
+function inPeriod(o: Operation, start: Date, end: Date, sinceTs?: number): boolean {
+  return inRange(o.date, start, end) && o.createdAt >= (sinceTs ?? 0)
+}
+
+export function categorySpent(ops: Operation[], catId: string, periodKey: string, periodStartDay: number, sinceTs?: number): number {
+  const { start, end } = periodBounds(periodKey, periodStartDay)
+  return ops
+    .filter(o => o.type === 'expense' && o.categoryId === catId && inPeriod(o, start, end, sinceTs))
+    .reduce((s, o) => s + o.amount, 0)
+}
+
+export function periodIncome(ops: Operation[], periodKey: string, periodStartDay: number, sinceTs?: number): number {
+  const { start, end } = periodBounds(periodKey, periodStartDay)
+  return ops
+    .filter(o => o.type === 'income' && inPeriod(o, start, end, sinceTs))
+    .reduce((s, o) => s + o.amount, 0)
+}
+
+export function periodExpense(ops: Operation[], periodKey: string, periodStartDay: number, sinceTs?: number): number {
+  const { start, end } = periodBounds(periodKey, periodStartDay)
+  return ops
+    .filter(o => o.type === 'expense' && inPeriod(o, start, end, sinceTs))
+    .reduce((s, o) => s + o.amount, 0)
+}
+
+/** Пополнения целей в периоде — уменьшают «свободные» деньги */
+export function periodGoalContribution(ops: Operation[], periodKey: string, periodStartDay: number, sinceTs?: number): number {
+  const { start, end } = periodBounds(periodKey, periodStartDay)
+  return ops
+    .filter(o => o.type === 'goal_contribution' && inPeriod(o, start, end, sinceTs))
+    .reduce((s, o) => s + o.amount, 0)
+}
+
+export function periodNet(ops: Operation[], periodKey: string, periodStartDay: number, sinceTs?: number): number {
+  return periodIncome(ops, periodKey, periodStartDay, sinceTs)
+    - periodExpense(ops, periodKey, periodStartDay, sinceTs)
+    - periodGoalContribution(ops, periodKey, periodStartDay, sinceTs)
 }
 
 export interface CategoryStatus {
@@ -93,5 +118,6 @@ export function emptyUser(): User {
     periodStartDay: 1,
     theme: 'lavender',
     onboarded: false,
+    monthResetAt: null,
   }
 }

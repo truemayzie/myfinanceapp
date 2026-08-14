@@ -2,14 +2,17 @@ import { useStore } from '../store/useStore'
 import { useApp } from '../AppContext'
 import { formatMoney, goalProgress } from '../utils/finance'
 import { ProgressBar } from '../components/Sheet'
+import { TopBar } from '../components/ui/TopBar'
+import { Button } from '../components/ui/Button'
+import { EmptyState } from '../components/ui/EmptyState'
 
 export default function Goals() {
-  const { goals, updateGoal, deleteGoal, setPrimaryGoal } = useStore()
+  const { goals, deleteGoal, setPrimaryGoal } = useStore()
   const { openSheet, showToast } = useApp()
 
   return (
     <div>
-      <div className="topbar"><h1>Мои цели</h1></div>
+      <TopBar title="Мои цели" />
       <p className="muted" style={{ marginTop: 0, fontSize: 13, padding: '0 16px' }}>Выберите основную — она будет на главной.</p>
 
       {goals.map(g => {
@@ -26,20 +29,22 @@ export default function Goals() {
             </div>
             <ProgressBar pct={pct} state={pct >= 100 ? 'ok' : ''} />
             <div className="row" style={{ marginTop: 12, gap: 8 }}>
-              <button className="primary-btn" style={{ flex: 1 }} onClick={() => openSheet('goalContribute', { id: g.id })}>+ Пополнить</button>
-              <button className="ghost-btn" style={{ flex: 1 }} onClick={() => openSheet('goal', { id: g.id })}>Изменить</button>
+              <Button style={{ flex: 1 }} onClick={() => openSheet('goalContribute', { id: g.id })}>+ Пополнить</Button>
+              <Button variant="ghost" style={{ flex: 1 }} onClick={() => openSheet('goal', { id: g.id })}>Изменить</Button>
             </div>
             <div className="row" style={{ marginTop: 8, gap: 8 }}>
               {!g.isPrimary && (
-                <button className="ghost-btn" style={{ flex: 1 }} onClick={() => { setPrimaryGoal(g.id); showToast('Сделана основной') }}>Сделать основной</button>
+                <Button variant="ghost" style={{ flex: 1 }} onClick={() => { setPrimaryGoal(g.id); showToast('Сделана основной') }}>Сделать основной</Button>
               )}
-              <button className="danger-btn" style={{ flex: 1 }} onClick={() => { if (confirm('Удалить цель?')) deleteGoal(g.id) }}>Удалить</button>
+              <Button variant="danger" style={{ flex: 1 }} onClick={() => { if (confirm('Удалить цель?')) deleteGoal(g.id) }}>Удалить</Button>
             </div>
           </div>
         )
       })}
 
-      <button className="dashed-btn" onClick={() => openSheet('goal')}>+ Добавить цель</button>
+      {goals.length === 0 && <EmptyState icon="🎯" text="Целей пока нет. Поставьте первую — она появится на главной." />}
+
+      <Button variant="dashed" onClick={() => openSheet('goal')}>+ Добавить цель</Button>
     </div>
   )
 }

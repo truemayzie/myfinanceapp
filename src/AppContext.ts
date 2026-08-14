@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-export type SheetKind = 'add' | 'budget' | 'goal' | 'goalContribute' | 'category' | 'categorySelect' | 'tbank' | null
+export type SheetKind = 'add' | 'budget' | 'goal' | 'goalContribute' | 'category' | 'categories' | 'history' | 'tbank' | null
 
 export interface AppCtx {
   openSheet: (k: SheetKind, payload?: any) => void

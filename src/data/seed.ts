@@ -23,4 +23,8 @@ export const DEFAULT_CATEGORIES: Omit<Category, 'id'>[] = [
   { name: 'Прочее', emoji: '📦', color: '#C0A3F0', monthlyLimit: 0, sortOrder: 6, isArchived: false },
 ]
 
+export const CATEGORY_EMOJIS = ['🛒', '☕', '🚇', '🏠', '🎉', '💊', '📦', '👕', '💡', '📱', '🍔', '🐱']
+
+export const GOAL_EMOJIS = ['🎯', '🚗', '🏠', '✈️', '💻', '📱', '💍', '🎓', '🎮', '🐱', '🏖️', '🛡️']
+
 export const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36)

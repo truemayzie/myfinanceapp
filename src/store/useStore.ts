@@ -36,6 +36,9 @@ interface State {
 
   savePlan: (plan: BudgetPlan) => void
 
+  /** Сбрасывает отображение трат текущего периода (операции остаются в истории) */
+  resetPeriod: (periodKey: string) => void
+
   sendSupport: (message: string) => void
 
   _replace: (partial: Partial<State>) => void
@@ -109,6 +112,9 @@ export const useStore = create<State>()(
           const others = s.plans.filter(p => p.periodKey !== plan.periodKey)
           return { plans: [...others, plan] }
         }),
+
+      resetPeriod: (periodKey) =>
+        set(s => ({ user: { ...s.user, monthResetAt: Date.now() } })),
 
       sendSupport: (message) =>
         set(s => ({
