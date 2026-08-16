@@ -1,16 +1,15 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { verifyInitData, extractInitData } from './_lib/telegram'
-import { getSupabase, StateDoc } from './_lib/supabase'
+const { verifyInitData, extractInitData } = require('./_lib/telegram')
+const { getSupabase } = require('./_lib/supabase')
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   try {
     return await run(req, res)
-  } catch (err: any) {
+  } catch (err) {
     return res.status(500).json({ error: err?.message || String(err) })
   }
 }
 
-async function run(req: VercelRequest, res: VercelResponse) {
+async function run(req, res) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   if (!botToken) return res.status(500).json({ error: 'server misconfigured' })
 
@@ -29,15 +28,15 @@ async function run(req: VercelRequest, res: VercelResponse) {
   }
 
   if (req.method === 'POST') {
-    const incoming: StateDoc = req.body?.state
+    const incoming = req.body?.state
     if (!incoming || !incoming.user) return res.status(400).json({ error: 'bad payload' })
 
     // Сливаем операции: сохраняем и локальные, и добавленные ботом (по id).
     const { data: existing } = await supabase.from('finance_state').select('data').eq('telegram_id', tid).maybeSingle()
-    const remote = (existing?.data as StateDoc) || null
+    const remote = existing?.data || null
     if (remote?.operations?.length) {
-      const ids = new Set((incoming.operations || []).map((o: any) => o.id))
-      const merged = [...(incoming.operations || []), ...remote.operations.filter((o: any) => !ids.has(o.id))]
+      const ids = new Set((incoming.operations || []).map(o => o.id))
+      const merged = [...(incoming.operations || []), ...remote.operations.filter(o => !ids.has(o.id))]
       incoming.operations = merged
     }
 

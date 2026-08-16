@@ -1,14 +1,6 @@
-import crypto from 'crypto'
+const crypto = require('crypto')
 
-export interface VerifiedUser {
-  id: number
-  first_name?: string
-  last_name?: string
-  username?: string
-}
-
-// Проверка подписи initData по алгоритму Telegram WebApp.
-export function verifyInitData(initData: string, botToken: string): VerifiedUser | null {
+function verifyInitData(initData, botToken) {
   try {
     const params = new URLSearchParams(initData)
     const hash = params.get('hash')
@@ -36,8 +28,10 @@ export function verifyInitData(initData: string, botToken: string): VerifiedUser
   }
 }
 
-export function extractInitData(req: any): string | null {
+function extractInitData(req) {
   const auth = req.headers['authorization'] || ''
   if (auth.startsWith('Bearer ')) return auth.slice(7)
   return null
 }
+
+module.exports = { verifyInitData, extractInitData }

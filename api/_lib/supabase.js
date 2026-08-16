@@ -1,8 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js')
 
-let client: ReturnType<typeof createClient> | null = null
+let client = null
 
-export function getSupabase() {
+function getSupabase() {
   const url = process.env.SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) throw new Error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set')
@@ -10,11 +10,4 @@ export function getSupabase() {
   return client
 }
 
-export interface StateDoc {
-  user: any
-  categories: any[]
-  operations: any[]
-  goals: any[]
-  plans: any[]
-  tickets: any[]
-}
+module.exports = { getSupabase }

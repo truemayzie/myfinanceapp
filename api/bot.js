@@ -1,12 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getSupabase, StateDoc } from './_lib/supabase'
-import { buildOperationFromPush } from '../src/utils/tbank'
-import { DEFAULT_CATEGORIES, uid } from '../src/data/seed'
+const { getSupabase } = require('./_lib/supabase')
+const { buildOperationFromPush } = require('./_lib/tbank')
+const { DEFAULT_CATEGORIES, uid } = require('./_lib/seed')
 
 const TG_API = 'https://api.telegram.org/bot'
 
-async function callTelegram(method: string, payload: any) {
-  const token = process.env.TELEGRAM_BOT_TOKEN!
+async function callTelegram(method, payload) {
+  const token = process.env.TELEGRAM_BOT_TOKEN
   const r = await fetch(`${TG_API}${token}/${method}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -15,7 +14,7 @@ async function callTelegram(method: string, payload: any) {
   return r.json()
 }
 
-function defaultState(name: string): StateDoc {
+function defaultState(name) {
   return {
     user: { id: 'local', telegramId: null, name, currency: '₽', periodStartDay: 1, theme: 'lavender', onboarded: true, monthResetAt: null },
     categories: DEFAULT_CATEGORIES.map(c => ({ ...c, id: uid() })),
@@ -26,15 +25,15 @@ function defaultState(name: string): StateDoc {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+module.exports = async function handler(req, res) {
   try {
     return await run(req, res)
-  } catch (err: any) {
+  } catch (err) {
     return res.status(500).json({ error: err?.message || String(err) })
   }
 }
 
-async function run(req: VercelRequest, res: VercelResponse) {
+async function run(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'post only' })
 
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET
@@ -48,7 +47,7 @@ async function run(req: VercelRequest, res: VercelResponse) {
 
   const tid = String(msg.from.id)
   const name = [msg.from.first_name, msg.from.last_name].filter(Boolean).join(' ') || msg.from.username || 'Друг'
-  const text: string = msg.text || ''
+  const text = msg.text || ''
 
   if (text.startsWith('/start')) {
     const webApp = process.env.TELEGRAM_WEBAPP_URL
@@ -64,10 +63,8 @@ async function run(req: VercelRequest, res: VercelResponse) {
 
   const supabase = getSupabase()
   const { data } = await supabase.from('finance_state').select('data').eq('telegram_id', tid).maybeSingle()
-  let state: StateDoc | null = (data?.data as StateDoc) || null
+  let state = data?.data || null
 
-  // Матчим категории по реальному состоянию пользователя (если оно есть),
-  // иначе — по дефолтному набору.
   const cats = state?.categories?.length ? state.categories : defaultState(name).categories
   const parsed = buildOperationFromPush(text, cats)
   if (!parsed) {
