@@ -45,12 +45,25 @@ export async function initSync() {
 
   useStore.getState().setSyncMode('cloud')
   const res = await getState(initData)
+  const local = useStore.getState()
+
   if (res?.state) {
-    const tid = tidFromInit(initData)
-    useStore.getState()._replace({
-      ...res.state,
-      user: { ...res.state.user, telegramId: tid },
-    })
+    const serverOps = res.state.operations?.length ?? 0
+    const localOps = local.operations.length
+    if (localOps > serverOps && localOps > 0) {
+      // На этом устройстве данных больше — облако не должно их затирать.
+      // Публикуем локальное состояние как самое полное.
+      await saveState(initData, pickState(local))
+    } else {
+      const tid = tidFromInit(initData)
+      local._replace({
+        ...res.state,
+        user: { ...res.state.user, telegramId: tid },
+      })
+    }
+  } else if (local.operations.length > 0 || local.plans.length > 0 || local.user.onboarded) {
+    // В облаке пусто, но на этом устройстве есть данные — заливаем их.
+    await saveState(initData, pickState(local))
   }
   useStore.getState().setHydrated(true)
 

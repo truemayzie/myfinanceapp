@@ -7,7 +7,12 @@ import { DEFAULT_CATEGORIES, uid } from '../data/seed'
 import { emptyUser, periodKeyForDate } from '../utils/finance'
 import { getUserFromTelegram } from '../telegram'
 
-export const SYNC_ENABLED = !!import.meta.env.VITE_API_BASE
+/**
+ * Синхронизация с сервером:
+ * - в проде (production-сборка) всегда включена — /api на том же домене (Vercel);
+ * - в dev — только если задан VITE_API_BASE (dev-сервер не умеет serverless).
+ */
+export const SYNC_ENABLED = !import.meta.env.DEV || !!import.meta.env.VITE_API_BASE
 
 interface State {
   user: User
