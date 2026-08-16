@@ -17,6 +17,8 @@ interface State {
   plans: BudgetPlan[]
   tickets: SupportTicket[]
   hydrated: boolean
+  /** cloud — состояние синхронизируется с сервером, local — только этот браузер */
+  syncMode: 'local' | 'cloud'
 
   updateUser: (patch: Partial<User>) => void
   completeOnboarding: (data: Partial<User>) => void
@@ -43,6 +45,7 @@ interface State {
 
   _replace: (partial: Partial<State>) => void
   setHydrated: (v: boolean) => void
+  setSyncMode: (v: 'local' | 'cloud') => void
 }
 
 function todayISO() {
@@ -59,6 +62,7 @@ export const useStore = create<State>()(
       plans: [],
       tickets: [],
       hydrated: !SYNC_ENABLED,
+      syncMode: 'local',
 
       updateUser: (patch) => set(s => ({ user: { ...s.user, ...patch } })),
 
@@ -126,8 +130,19 @@ export const useStore = create<State>()(
 
       _replace: (partial) => set(partial),
       setHydrated: (v) => set({ hydrated: v }),
+      setSyncMode: (v) => set({ syncMode: v }),
     }),
-    { name: 'finance-miniapp-v1' },
+    {
+      name: 'finance-miniapp-v1',
+      partialize: (s) => ({
+        user: s.user,
+        categories: s.categories,
+        operations: s.operations,
+        goals: s.goals,
+        plans: s.plans,
+        tickets: s.tickets,
+      }),
+    },
   ),
 )
 

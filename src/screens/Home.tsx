@@ -1,4 +1,4 @@
-import { useStore, currentPeriodKey } from '../store/useStore'
+import { useStore, SYNC_ENABLED, currentPeriodKey } from '../store/useStore'
 import { useApp } from '../AppContext'
 import { daysLeft, formatMoney, goalProgress, monthLabel, periodExpense, periodGoalContribution, periodIncome } from '../utils/finance'
 import { Track } from '../components/Sheet'
@@ -12,7 +12,10 @@ export default function Home() {
   const operations = useStore(s => s.operations)
   const goals = useStore(s => s.goals)
   const plans = useStore(s => s.plans)
+  const syncMode = useStore(s => s.syncMode)
   const { openSheet, goTab } = useApp()
+
+  const localOnly = SYNC_ENABLED && syncMode === 'local'
 
   const pk = currentPeriodKey()
   const since = user.monthResetAt ?? undefined
@@ -116,6 +119,19 @@ export default function Home() {
         <b className="num">{income > 0 ? `+${formatMoney(income)}` : 'доход не записан'}</b>
         {invested > 0 && <span className="num">· в цель {formatMoney(invested)}</span>}
       </p>
+
+      {localOnly && (
+        <div className="sync-note">
+          <Icon name="alert" size={14} />
+          <span>Открыто вне Telegram — данные видны только на этом устройстве. Откройте приложение через Telegram, чтобы синхронизировать.</span>
+        </div>
+      )}
+      {SYNC_ENABLED && syncMode === 'cloud' && (
+        <div className="sync-note ok">
+          <Icon name="check" size={14} />
+          <span>Данные синхронизированы с облаком</span>
+        </div>
+      )}
     </div>
   )
 }

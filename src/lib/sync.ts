@@ -32,15 +32,18 @@ export async function initSync() {
 
   if (!SYNC_ENABLED) {
     useStore.getState().setHydrated(true)
+    useStore.getState().setSyncMode('local')
     return
   }
   const initData = getInitData()
   if (!initData) {
     // Запущено вне Telegram — работаем локально.
     useStore.getState().setHydrated(true)
+    useStore.getState().setSyncMode('local')
     return
   }
 
+  useStore.getState().setSyncMode('cloud')
   const res = await getState(initData)
   if (res?.state) {
     const tid = tidFromInit(initData)
