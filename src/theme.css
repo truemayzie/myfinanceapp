@@ -125,16 +125,31 @@ h1, h2, h3, p { margin: 0; }
 .hero-top { display: flex; justify-content: space-between; align-items: center; position: relative; }
 .hero-badge { display: inline-flex; padding: 5px 12px; border-radius: var(--r-pill); background: rgba(255,255,255,0.10); color: var(--hero-sub); font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
 .hero-badge.warn { background: var(--danger); color: #fff; }
-.hero-net { display: flex; align-items: baseline; gap: 8px; margin: 14px 0 4px; }
-.hero-net .num { font-size: 42px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.hero-note { color: var(--hero-sub); font-size: 12px; font-weight: 600; }
-.hero-budget { color: var(--hero-sub); font-size: 13px; position: relative; }
-.hero-budget b { color: var(--hero-text); }
+.hero-days { color: var(--hero-sub); font-size: 12px; font-weight: 600; }
+.hero-label { color: var(--hero-sub); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 16px; }
+.hero-expense { display: flex; align-items: baseline; gap: 8px; margin: 4px 0 10px; }
+.hero-expense .num { font-size: 40px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.hero-expense .of { color: var(--hero-sub); font-size: 17px; font-weight: 700; }
+.hero-subline { display: flex; align-items: center; gap: 8px; color: var(--hero-sub); font-size: 13px; margin-top: 8px; }
 .hero .track { background: rgba(255,255,255,0.16); }
 .hero .track > i { background: #FFFFFF; }
 .hero .track.over > i { background: var(--danger); }
 .hero .track.warn > i { background: var(--warn); }
-.hero-actions { display: flex; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.12); position: relative; }
+.hero .hero-actions { margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.12); position: relative; }
+.btn-hero { background: var(--hero-text); color: var(--hero-bg); }
+.hero-link { color: var(--hero-text); text-decoration: underline; font-size: 13px; font-weight: 700; padding: 0; }
+.hero-link:active { opacity: 0.7; }
+
+/* Строка «период · дней» */
+.period-line { color: var(--ink-2); font-size: 13px; font-weight: 700; margin-top: 4px; }
+
+/* Чек-строка */
+.list-total { display: flex; justify-content: space-between; align-items: baseline; padding: 13px 14px; border-top: 1px solid var(--line); }
+.list-total .lbl { font-size: 12px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.list-total .num { font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* Итоговая строка */
+.sumline { display: flex; justify-content: center; gap: 6px; font-size: 13px; color: var(--muted); margin-top: 4px; }
 
 /* ---------- Строка метрик ---------- */
 .metric-row { display: flex; background: var(--surface); border-radius: var(--r-card); box-shadow: var(--shadow-sm); overflow: hidden; margin-bottom: 14px; }
