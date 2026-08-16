@@ -1,9 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/bot.ts": { "runtime": "nodejs20.x" },
-    "api/state.ts": { "runtime": "nodejs20.x" },
-    "api/ping.ts": { "runtime": "nodejs20.x" }
-  },
-  "framework": "vite"
-}
