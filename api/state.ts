@@ -3,6 +3,14 @@ import { verifyInitData, extractInitData } from './_lib/telegram'
 import { getSupabase, StateDoc } from './_lib/supabase'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await run(req, res)
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || String(err) })
+  }
+}
+
+async function run(req: VercelRequest, res: VercelResponse) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN
   if (!botToken) return res.status(500).json({ error: 'server misconfigured' })
 

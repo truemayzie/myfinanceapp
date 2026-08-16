@@ -27,6 +27,14 @@ function defaultState(name: string): StateDoc {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  try {
+    return await run(req, res)
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || String(err) })
+  }
+}
+
+async function run(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'post only' })
 
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET
