@@ -1,5 +1,3 @@
-export type ThemeName = 'pink' | 'mint' | 'lavender' | 'blue' | 'neutral'
-
 export type OperationType = 'income' | 'expense' | 'goal_contribution'
 
 export type OperationSource = 'manual' | 'tbank_push' | 'tbank_export'
@@ -10,7 +8,6 @@ export interface User {
   name: string
   currency: string
   periodStartDay: number
-  theme: ThemeName
   onboarded: boolean
   /** Момент последнего сброса месяца: траты до этой даты не считаются в периодах */
   monthResetAt: number | null

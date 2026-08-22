@@ -1,11 +1,12 @@
 # Финансы — Telegram Mini App
 
 Личные финансы в Telegram: учёт трат по категориям, бюджет от зарплаты,
-накопительные цели, аналитика и смена тем. Работает как Mini App внутри
-Telegram, данные хранятся локально в браузере (без сервера).
+накопительные цели и аналитика. Работает как Mini App внутри Telegram:
+внутри Telegram состояние синхронизируется через Supabase, вне — хранится
+локально в браузере.
 
 ## Возможности (MVP)
-- 5 вкладок: Главная, Статистика, Цели, Аналитика, Настройки
+- 4 вкладки: Главная, Статистика (со встроенной аналитикой), Цели, Настройки
 - Добавление доходов/расходов, лимиты по категориям
 - Планирование бюджета с расчётом «свободного остатка» (план пишется в категории)
 - Накопительные цели (пополнение, основная цель на главной, отчисления вычитаются из «свободных» денег)
@@ -13,7 +14,7 @@ Telegram, данные хранятся локально в браузере (б
 - Редактор категорий: изменение/удаление/добавление
 - Реальный сброс месяца: траты перестают влиять на бюджет, но остаются в истории
 - Графики: donut по категориям, столбцы доход/расход, тепловая карта трат
-- 5 тем, онбординг (имя, валюта, дата зарплаты, доход, тема), период с датой зарплаты
+- Онбординг (имя, валюта, дата зарплаты, доход), период с датой зарплаты
 - **Импорт трат из Т-Банка**: вставь текст push-уведомления → трата добавляется
   автоматически (сумма парсится, категория подбирается по магазину)
 
@@ -34,20 +35,22 @@ npm run dev
 ```
 src/
   types.ts            модель данных
-  data/seed.ts        темы, палитра, дефолтные категории, наборы эмодзи
+  index.css           дизайн-токены Tailwind v4 (@theme) и базовые стили
+  data/seed.ts        палитра, дефолтные категории, наборы иконок и эмодзи
   store/useStore.ts   Zustand + persist (localStorage)
   utils/finance.ts    расчёты периодов, бюджета, прогресса, сброса месяца
   utils/tbank.ts      парсер push-уведомлений Т-Банка
   lib/api.ts          клиент /api/state
   lib/sync.ts         гидрация и push состояния в Supabase (через /api)
   telegram.ts         обёртка над Telegram WebApp SDK
-  components/         BottomNav, Fab, Sheet, ProgressBar, charts/, ui/ (Button, Field, TopBar, EmptyState)
-  screens/            Home, Stats, Goals, Analytics, Settings, Onboarding
-  modals/             AddOperation, BudgetPlan, GoalEdit, GoalContribute,
-                      CategoryEdit, CategoryManager, History, TbankImport
+  components/         BottomNav, Fab, Sheet, OperationRow, icons, charts/,
+                      ui/ (Button, Card, Field, Segmented, ProgressRing, AppHeader, EmptyState)
+  screens/            Home, Stats, Goals, Settings, Onboarding
+  modals/             QuickAdd, AddOperation, BudgetPlan, GoalEdit, GoalContribute,
+                      CategoryEdit, CategoryManager, History, TbankImport, SupportSheet
 api/
-  state.ts            GET/POST состояния (верификация initData)
-  bot.ts              webhook бота + приём пушей Т-Банка
+  state.js            GET/POST состояния (верификация initData)
+  bot.js              webhook бота + приём пушей Т-Банка
   _lib/               верификация Telegram, клиент Supabase (service_role)
 ```
 
@@ -77,7 +80,7 @@ api/
 5. **Mini App**: в BotFather → /setmenubutton укажи `TELEGRAM_WEBAPP_URL`.
 
 Теперь данные синхронизируются между устройствами через Supabase, а пересланный
-боту пуш Т-Банка дописывается в твои траты (`api/bot.ts` + `src/utils/tbank.ts`).
+боту пуш Т-Банка дописывается в твои траты (`api/bot.js` + `src/utils/tbank.ts`).
 
 Локально без сервера `npm run dev` работает как раньше (только localStorage).
 Чтобы проверить серверные функции локально — `vercel dev` (Vercel CLI).

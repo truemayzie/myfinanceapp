@@ -16,7 +16,7 @@ async function callTelegram(method, payload) {
 
 function defaultState(name) {
   return {
-    user: { id: 'local', telegramId: null, name, currency: '₽', periodStartDay: 1, theme: 'lavender', onboarded: true, monthResetAt: null },
+    user: { id: 'local', telegramId: null, name, currency: '₽', periodStartDay: 1, onboarded: true, monthResetAt: null },
     categories: DEFAULT_CATEGORIES.map(c => ({ ...c, id: uid() })),
     operations: [],
     goals: [],
@@ -92,7 +92,7 @@ async function run(req, res) {
   const cat = state.categories.find(c => c.id === op.categoryId)
   await callTelegram('sendMessage', {
     chat_id: tid,
-    text: `✅ Трата добавлена: ${op.amount.toLocaleString('ru-RU')} ₽${cat ? ` · ${cat.emoji} ${cat.name}` : ''}. Открой Mini App, чтобы увидеть её в бюджете.`,
+    text: `✅ Трата добавлена: ${op.amount.toLocaleString('ru-RU')} ₽${cat ? ` · ${cat.name}` : ''}. Открой Mini App, чтобы увидеть её в бюджете.`,
   })
   return res.status(200).json({ ok: true })
 }

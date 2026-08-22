@@ -6,8 +6,8 @@ export function initTelegram() {
   try {
     tg.ready()
     tg.expand()
-    tg.setHeaderColor?.('#B6A1EE')
-    tg.setBackgroundColor?.('#F3F0FF')
+    tg.setHeaderColor?.('#fbfaf7')
+    tg.setBackgroundColor?.('#f6f5f1')
   } catch {
     /* outside telegram — ignore */
   }

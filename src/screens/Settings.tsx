@@ -1,11 +1,21 @@
 import { useState } from 'react'
-import { useStore, currentPeriodKey } from '../store/useStore'
+import {
+  ChevronRight,
+  Download,
+  History as HistoryIcon,
+  LifeBuoy,
+  RotateCcw,
+  Smartphone,
+  Sparkles,
+  Tag,
+} from 'lucide-react'
+import { useStore, SYNC_ENABLED, currentPeriodKey } from '../store/useStore'
 import { useApp } from '../AppContext'
-import { THEMES } from '../data/seed'
 import { exportCSV } from '../utils/export'
 import { AppHeader, Section } from '../components/ui/AppHeader'
-import { Icon } from '../components/icons'
+import { Field, Input } from '../components/ui/Field'
 import { Button } from '../components/ui/Button'
+import { Card, Row } from '../components/ui/Card'
 
 export default function Settings() {
   const user = useStore(s => s.user)
@@ -13,11 +23,10 @@ export default function Settings() {
   const operations = useStore(s => s.operations)
   const categories = useStore(s => s.categories)
   const goals = useStore(s => s.goals)
+  const syncMode = useStore(s => s.syncMode)
   const resetPeriod = useStore(s => s.resetPeriod)
   const { openSheet, showToast } = useApp()
   const [name, setName] = useState(user.name)
-
-  const themes = Object.entries(THEMES) as [keyof typeof THEMES, (typeof THEMES)[keyof typeof THEMES]][]
 
   const resetMonth = () => {
     if (confirm('Обнулить траты текущего периода? Операции останутся в истории, но перестанут влиять на бюджет.')) {
@@ -26,96 +35,123 @@ export default function Settings() {
     }
   }
 
+  const rows = [
+    {
+      icon: Tag,
+      title: 'Категории',
+      hint: `${categories.filter(c => !c.isArchived).length} активных`,
+      onClick: () => openSheet('categories'),
+    },
+    {
+      icon: Smartphone,
+      title: 'Импорт из Т-Банка',
+      hint: 'пуши через бота',
+      onClick: () => openSheet('tbank'),
+    },
+    {
+      icon: HistoryIcon,
+      title: 'История операций',
+      hint: `${operations.length} записей`,
+      onClick: () => openSheet('history'),
+    },
+    {
+      icon: Download,
+      title: 'Экспорт CSV',
+      hint: 'выгрузить все операции',
+      onClick: () => {
+        if (operations.length === 0) return showToast('Нет операций для экспорта')
+        exportCSV(operations, categories, goals)
+        showToast('CSV скачан')
+      },
+    },
+    {
+      icon: LifeBuoy,
+      title: 'Поддержка',
+      hint: 'написать нам',
+      onClick: () => openSheet('support'),
+    },
+  ]
+
   return (
-    <div>
-      <AppHeader title="Настройки" subtitle={`Привет, ${user.name}`} />
+    <div className="space-y-8">
+      <AppHeader title="Настройки" eyebrow="Профиль" subtitle={`Привет, ${user.name}`} />
 
-      <Section title="Профиль" />
-      <div className="panel">
-        <div className="field">
-          <label>Имя</label>
-          <input
-            className="input"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            onBlur={() => updateUser({ name: name.trim() || 'Друг' })}
-          />
-        </div>
-        <div className="field">
-          <label>Начало периода (день зарплаты)</label>
-          <input
-            className="input"
-            type="number" min={1} max={28}
-            defaultValue={user.periodStartDay}
-            onBlur={e => updateUser({ periodStartDay: Math.min(28, Math.max(1, Number(e.target.value) || 1)) })}
-          />
-        </div>
-        <div className="field">
-          <label>Валюта</label>
-          <input
-            className="input"
-            defaultValue={user.currency}
-            onBlur={e => updateUser({ currency: e.target.value.trim() || '₽' })}
-          />
+      <div>
+        <Section title="Профиль" eyebrow="Основное" />
+        <Card className="p-5 sm:p-6">
+          <Field label="Имя">
+            <Input value={name} onChange={e => setName(e.target.value)} onBlur={() => updateUser({ name: name.trim() || 'Друг' })} />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Начало периода" hint="день зарплаты, 1–28">
+              <Input
+                type="number"
+                min={1}
+                max={28}
+                defaultValue={user.periodStartDay}
+                onBlur={e => updateUser({ periodStartDay: Math.min(28, Math.max(1, Number(e.target.value) || 1)) })}
+              />
+            </Field>
+            <Field label="Валюта" hint="символ в интерфейсе">
+              <Input defaultValue={user.currency} onBlur={e => updateUser({ currency: e.target.value.trim() || '₽' })} />
+            </Field>
+          </div>
+        </Card>
+      </div>
+
+      <div>
+        <Section title="Данные" eyebrow="Управление" />
+        <Card>
+          {rows.map(r => {
+            const Icon = r.icon
+            return (
+              <Row as="button" key={r.title} onClick={r.onClick}>
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-2 text-muted">
+                  <Icon className="size-[17px]" strokeWidth={1.9} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block truncate text-[13px] font-bold">{r.title}</b>
+                  <small className="mt-0.5 block truncate text-[11px] text-faint">{r.hint}</small>
+                </span>
+                <ChevronRight className="size-[18px] shrink-0 text-pale" strokeWidth={1.8} />
+              </Row>
+            )
+          })}
+        </Card>
+      </div>
+
+      <div>
+        <Section title="Подписка" eyebrow="Скоро" />
+        <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white shadow-hero sm:p-7">
+          <div className="pointer-events-none absolute -right-14 -top-16 size-44 rounded-full bg-brand/25" />
+          <div className="relative">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold text-white/70">
+              <Sparkles className="size-3" strokeWidth={2} />
+              PRO
+            </span>
+            <h3 className="mt-4 text-xl font-bold tracking-[-0.04em]">Финансы PRO</h3>
+            <p className="mt-2 max-w-[380px] text-xs leading-5 text-white/55">
+              Неограниченные категории, цели без лимита и приоритетная поддержка.
+            </p>
+            <Button variant="onDark" className="mt-5" onClick={() => showToast('Подписка — в разработке')}>
+              Выбрать план
+            </Button>
+          </div>
         </div>
       </div>
 
-      <Section title="Акцент" />
-      <div className="panel">
-        <div className="theme-grid">
-          {themes.map(([key, t]) => (
-            <button
-              key={key}
-              className={`theme-swatch ${user.theme === key ? 'on' : ''}`}
-              style={{ background: t.primary }}
-              onClick={() => updateUser({ theme: key })}
-              title={t.label}
-            />
-          ))}
-        </div>
-      </div>
-
-      <Section title="Данные" />
-      <div className="list">
-        <button className="nav-row" onClick={() => openSheet('categories')}>
-          <Icon name="tag" size={18} /><span className="row-main"><b>Категории</b><small>{categories.length}</small></span>
-          <Icon name="chevR" size={18} className="muted" />
-        </button>
-        <button className="nav-row" onClick={() => openSheet('tbank')}>
-          <Icon name="phone" size={18} /><span className="row-main"><b>Импорт из Т-Банка</b><small>пуши бота</small></span>
-          <Icon name="chevR" size={18} className="muted" />
-        </button>
-        <button className="nav-row" onClick={() => openSheet('history')}>
-          <Icon name="history" size={18} /><span className="row-main"><b>История операций</b><small>{operations.length}</small></span>
-          <Icon name="chevR" size={18} className="muted" />
-        </button>
+      <div className="space-y-3">
         <button
-          className="nav-row"
-          onClick={() => {
-            if (operations.length === 0) return showToast('Нет операций для экспорта')
-            exportCSV(operations, categories, goals)
-            showToast('CSV скачан')
-          }}
+          onClick={resetMonth}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-danger-soft py-3 text-xs font-bold text-danger transition hover:bg-danger hover:text-white"
         >
-          <Icon name="download" size={18} /><span className="row-main"><b>Экспорт CSV</b><small>{operations.length} операций</small></span>
-          <Icon name="chevR" size={18} className="muted" />
+          <RotateCcw className="size-4" strokeWidth={1.9} />
+          Обнулить период
         </button>
-      </div>
-
-      <Section title="Подписка" />
-      <div className="upgrade">
-        <h3>Финансы PRO</h3>
-        <p>Неограниченные категории, цели без лимита и приоритетная поддержка.</p>
-        <Button onClick={() => showToast('Подписка — в разработке')}>Выбрать план</Button>
-      </div>
-
-      <div className="row-actions">
-        <button className="link-btn danger" onClick={resetMonth}>Обнулить период</button>
-      </div>
-      <p className="footnote">Всего операций: {operations.length} · данные хранятся локально и в облаке</p>
-
-      <div className="pad">
-        <Button variant="ghost" block onClick={() => openSheet('support')}>Поддержка</Button>
+        <p className="text-center text-[11px] leading-4 text-pale">
+          Операций в базе: {operations.length} ·{' '}
+          {SYNC_ENABLED && syncMode === 'cloud' ? 'синхронизировано с облаком' : 'хранится на этом устройстве'}
+        </p>
       </div>
     </div>
   )

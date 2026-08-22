@@ -154,7 +154,6 @@ export function emptyUser(): User {
     name: 'Друг',
     currency: '₽',
     periodStartDay: 1,
-    theme: 'lavender',
     onboarded: false,
     monthResetAt: null,
   }

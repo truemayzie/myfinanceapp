@@ -1,23 +1,36 @@
 export interface DonutSegment { value: number; color: string; label: string }
 
-export default function Donut({ segments, size = 170 }: { segments: DonutSegment[]; size?: number }) {
+/** Кольцо долей: conic-gradient по сегментам, сумма в центре */
+export default function Donut({ segments, size = 176 }: { segments: DonutSegment[]; size?: number }) {
   const total = segments.reduce((s, x) => s + x.value, 0)
+
   if (total <= 0) {
-    return <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--surface-2)', margin: '0 auto' }} />
+    return (
+      <div
+        className="mx-auto rounded-full bg-surface-2"
+        style={{ width: size, height: size }}
+      />
+    )
   }
+
   let acc = 0
-  const stops = segments.map(s => {
-    const start = (acc / total) * 360
-    acc += s.value
-    const end = (acc / total) * 360
-    return `${s.color} ${start}deg ${end}deg`
-  }).join(', ')
+  const stops = segments
+    .map(s => {
+      const start = (acc / total) * 360
+      acc += s.value
+      return `${s.color} ${start}deg ${(acc / total) * 360}deg`
+    })
+    .join(', ')
+
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: `conic-gradient(${stops})`, margin: '0 auto', position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: '22%', background: 'var(--surface)', borderRadius: '50%', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+    <div
+      className="relative mx-auto rounded-full"
+      style={{ width: size, height: size, background: `conic-gradient(${stops})` }}
+    >
+      <div className="absolute inset-[23%] grid place-items-center rounded-full bg-card text-center shadow-card">
         <div>
-          <div className="t-md num">{Math.round(total).toLocaleString('ru-RU')}</div>
-          <div className="up" style={{ color: 'var(--muted)' }}>всего</div>
+          <p className="num text-lg font-bold tracking-[-0.04em]">{Math.round(total).toLocaleString('ru-RU')}</p>
+          <p className="eyebrow mt-0.5">всего</p>
         </div>
       </div>
     </div>
